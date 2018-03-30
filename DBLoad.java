@@ -1,4 +1,4 @@
-package dbs_a1_heapfile;
+package dbs_a1_heapfile_load;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -30,7 +30,7 @@ public class DBLoad {
 		
 		StringTokenizer	strTok;
 		
-		if(true) {
+		if(args[0].equals("-p") && args[1].matches("[0-9]+")) {
 			heapPageSize = Integer.parseInt(args[1]);
 			dataFileName = args[2];
 			heapFileName = "heap." + args[1];
@@ -38,6 +38,7 @@ public class DBLoad {
 			
 			if(recordsPerPage >= 1) {
 				try {
+					long start = System.nanoTime();
 					dataFile = new BufferedReader(new FileReader(dataFileName));
 					heapFile = new FileOutputStream(new File(heapFileName));
 					lineRead = dataFile.readLine();
@@ -114,21 +115,23 @@ public class DBLoad {
 							currOffset = currOffset + sizeOfRecord;
 							recordCounter++;
 							recordID++;
-							System.out.println(recordID);
 							lineRead = dataFile.readLine();
 						}
 						heapFile.write(heapPage);
 						pageNum++;
 					}
-					System.out.println(recordID + " records created.");
+					long finish = System.nanoTime();
+					System.out.println("Executed in: " + (finish-start)/1000000 + "ms");
+					System.out.println(recordID + " records loaded.");
 					System.out.println(pageNum + " pages created.");
 					heapFile.close();
-					
 				} catch(FileNotFoundException e) {
-					e.printStackTrace();
+					System.out.println(dataFileName + " could not be found.");
 				} catch(IOException e) {
 					e.printStackTrace();
 				}
+			} else {
+				System.out.println("Page size is too small. Please use allow at least 350 bytes per a page.");
 			}
 			/*try {
 				FileInputStream readIn = new FileInputStream(new File(heapFileName));
@@ -139,6 +142,10 @@ public class DBLoad {
 					byte[] page = new byte[heapPageSize];
 					readIn.read(page, 0, sizeOfPage);
 					int recordOffset = 0;
+					byte[] pageNumArr = new byte[4];
+					System.arraycopy(page, page.length-4, pageNumArr, 0, 4);
+					int heapPageNum = ByteBuffer.wrap(pageNumArr).getInt();
+					System.out.println("Page:" + heapPageNum);
 					for(int i=0; i < recordsPerPage; i++) {
 						byte[] line = new byte[345];
 						System.arraycopy(page, recordOffset, line, 0, sizeOfRecord);
@@ -148,7 +155,7 @@ public class DBLoad {
 						int rid = ridWrap.getInt();
 						byte[] recordBytes = new byte[341];
 						System.arraycopy(line, 4, recordBytes, 0, 341);
-						System.out.println(rid + " " + new String(recordBytes));
+						System.out.println(heapPageNum + ":" + rid + " " + new String(recordBytes));
 						recordOffset += sizeOfRecord;
 					}
 				}
@@ -157,6 +164,8 @@ public class DBLoad {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}*/
+		} else {
+			System.out.println("One of the commandline parameters you've entered are invalid.");
 		}
 	}
 }
